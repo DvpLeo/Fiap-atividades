@@ -1,0 +1,65 @@
+# Leonardo RM:568219 Graduação - 1TIAOR
+
+#!/usr/bin/env python3  # Shebang para execução direta
+
+import random  # Para simular sensores
+import time    # Para delays
+import requests  # Para API OpenWeather
+
+# Configurações globais
+CIDADE = 'São Paulo'  
+API_KEY = '0ccc9a8909d1d3b827da45162e17ba51'  
+CULTURA = 'Tomate'  
+INTERVALO_SIMULACAO = 5  # Intervalo em segundos
+
+def simular_sensores():
+    """Simula os sensores."""
+    N = random.choice([True, False])
+    P = random.choice([True, False])
+    K = random.choice([True, False])
+    pH_base = random.uniform(0, 14)
+    if N and P and K:
+        pH = min(pH_base + 1, 14)
+    else:
+        pH = pH_base
+    umidade = random.uniform(0, 100)
+    return N, P, K, round(pH, 2), round(umidade, 2)
+
+def verificar_previsao_clima(cidade, api_key):
+    """Consulta a API OpenWeather."""
+    url = f"http://api.openweathermap.org/data/2.5/weather?q={cidade}&appid={api_key}&units=metric"
+    try:
+        response = requests.get(url, timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            return data['weather'][0]['main']
+        return 'Erro na API'
+    except requests.exceptions.RequestException as e:
+        return f'Erro: {str(e)}'
+
+def logica_irrigacao(N, P, K, pH, umidade, previsao_clima):
+    """Lógica de decisão."""
+    if umidade < 50 and 6 <= pH <= 7 and N and P and K:
+        if previsao_clima.lower() == 'rain':
+            return False, "Não irrigando: Previsão de chuva!"
+        return True, "Irrigando: Condições ideais!"
+    return False, "Não irrigando: Condições não ideais."
+
+def main():
+    """Função principal para simulação."""
+    print(f"Simulador de Irrigação para {CULTURA}")
+    while True:
+        try:
+            N, P, K, pH, umidade = simular_sensores()
+            previsao_clima = verificar_previsao_clima(CIDADE, API_KEY)
+            irrigar, mensagem = logica_irrigacao(N, P, K, pH, umidade, previsao_clima)
+            print(f"\nCiclo:")
+            print(f"- Sensores: N={N}, P={P}, K={K}, pH={pH}, Umidade={umidade}%")
+            print(f"- Previsão: {previsao_clima}")
+            print(f"- Decisão: {mensagem}")
+            time.sleep(INTERVALO_SIMULACAO)
+        except Exception as e:
+            print(f"Erro: {str(e)}")
+
+if __name__ == "__main__":
+    main()  # Chama a função main
