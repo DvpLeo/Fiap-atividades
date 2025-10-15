@@ -1,0 +1,101 @@
+# Leonardo rm:568219
+import random
+import time
+import requests
+import json
+import cx_Oracle 
+import os  # Para manipulação de arquivos
+
+# Configurações globais
+CIDADE = 'São Paulo'
+API_KEY = '0ccc9a8909d1d3b827da45162e17ba51'  
+CULTURA = 'Cana-de-Açúcar'  
+INTERVALO_SIMULACAO = 5  # Segundos entre ciclos
+
+def simular_sensores():
+    """Subalgoritmo: Simula sensores com validação de dados (estruturas de dados: dicionário)."""
+    try:
+        N = random.choice([True, False])  # Nível de Nitrogênio
+        P = random.choice([True, False])  # Nível de Fósforo
+        K = random.choice([True, False])  # Nível de Potássio
+        pH_base = random.uniform(0, 14)
+        if N and P and K:
+            pH = min(pH_base + 1, 14)
+        else:
+            pH = pH_base
+        umidade = random.uniform(0, 100)
+        return {
+            'N': N,
+            'P': P,
+            'K': K,
+            'pH': round(pH, 2),
+            'umidade': round(umidade, 2)
+        }  # Retorna um dicionário
+    except Exception as e:
+        raise ValueError("Erro na simulação de sensores: " + str(e))
+
+def verificar_previsao_clima(cidade, api_key):
+    """Subalgoritmo: Integra API para previsão de clima."""
+    url = f"http://api.openweathermap.org/data/2.5/weather?q={cidade}&appid={api_key}&units=metric"
+    try:
+        response = requests.get(url, timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            return data['weather'][0]['main']
+        return 'Erro na API'
+    except requests.exceptions.RequestException as e:
+        return f'Erro: {str(e)}'
+
+def logica_irrigacao(dados_sensor, previsao_clima):
+    """Subalgoritmo: Lógica de decisão com parâmetros (estrutura de dados: dicionário)."""
+    if dados_sensor['umidade'] < 50 and 6 <= dados_sensor['pH'] <= 7 and dados_sensor['N'] and dados_sensor['P'] and dados_sensor['K']:
+        if previsao_clima.lower() == 'rain':
+            return False, "Não irrigando: Previsão de chuva!"
+        return True, "Irrigando: Condições ideais!"
+    return False, "Não irrigando: Condições não ideais!"
+
+def gravar_em_arquivo(dados):
+    """Subalgoritmo: Manipula arquivos JSON para salvar dados."""
+    try:
+        with open('dados_agro.json', 'a') as f:  # Abre arquivo em modo append
+            json.dump(dados, f)
+            f.write('\n')  # Nova linha para múltiplas entradas
+    except Exception as e:
+        print(f"Erro ao gravar arquivo: {str(e)}")
+
+def gravar_no_banco(dados):
+    """Subalgoritmo: Conecta ao banco Oracle e insere dados (estrutura de dados: lista de dicionários)."""
+    try:
+        connection = cx_Oracle.connect(user='seu_usuario', password='sua_senha', dsn='seu_dsn')  # Configure com suas credenciais
+        cursor = connection.cursor()
+        cursor.execute("""
+            INSERT INTO dados_agro (N, P, K, pH, umidade, data_hora)
+            VALUES (:N, :P, :K, :pH, :umidade, SYSDATE)
+        """, (dados['N'], dados['P'], dados['K'], dados['pH'], dados['umidade']))
+        connection.commit()
+        cursor.close()
+        connection.close()
+    except cx_Oracle.Error as e:
+        print(f"Erro no banco de dados: {str(e)}")
+
+def main():
+    """Função principal: Orquestra a simulação com validação de entradas."""
+    print(f"Simulador para {CULTURA} na FarmTech Solutions")
+    while True:
+        try:
+            dados_sensor = simular_sensores()  # Validação interna
+            if not isinstance(dados_sensor, dict):  # Consistência de dados
+                raise ValueError("Dados de sensores inválidos")
+            previsao_clima = verificar_previsao_clima(CIDADE, API_KEY)
+            irrigar, mensagem = logica_irrigacao(dados_sensor, previsao_clima)
+            gravar_em_arquivo(dados_sensor)  # Manipulação de arquivo
+            gravar_no_banco(dados_sensor)  # Conexão com banco
+            print(f"\nCiclo: {dados_sensor} | Previsão: {previsao_clima} | Decisão: {mensagem}")
+            time.sleep(INTERVALO_SIMULACAO)
+        except ValueError as e:
+            print(f"Entrada inválida: {str(e)}")
+        except Exception as e:
+            print(f"Erro geral: {str(e)}")
+
+if __name__ == "__main__":
+    main()
