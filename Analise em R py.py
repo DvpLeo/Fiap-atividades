@@ -1,3 +1,4 @@
+# Leonardo_Pietro_RM568219_fase2_cap9
 import pandas as pd  # Para manipulação de dados
 import matplotlib.pyplot as plt  # Para gráficos
 from matplotlib import style  # Estilo para usabilidade
