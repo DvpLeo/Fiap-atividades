@@ -54,3 +54,9 @@ Para recriar o ambiente e executar a simulação:
     python3 data_visualization.py
     ```
 
+## Entregáveis
+
+Todos os arquivos gerados, incluindo os scripts Python, o banco de dados (`flexmedia_totem.db`), o modelo de ML (`interaction_classifier.joblib`), os gráficos (`visualizacoes/`) e a documentação (`DOCUMENTACAO_TECNICA.md`), compõem os entregáveis do projeto.
+
+---
+*Desenvolvido por Manus AI para o Challenge FlexMedia.*
